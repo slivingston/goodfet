@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+# STROBE client
+#
+#
+# SCL  <slivingston@cds.caltech.edu>
+# 8 Jul 2015
+
+import sys
+import time
+
+from GoodFET import GoodFET
+
+STROBEAPP = 0x33
+STROBE_PATTERN = 0x81
+STROBE_ALLHI = 0x82
+STROBE_ALLLO = 0x83
+
+
+if len(sys.argv) == 1:
+    print "Usage: goodfet.strobe verb [OPTIONS]\n"
+    print "goodfet.strobe allhi"
+    print "goodfet.strobe alllo"
+    print "goodfet.strobe pattern DURATION COUNT BYTE0 [BYTE1 ...]"
+    print
+    print "DURATION (integer) is the duration of each step, in units of 10 ms."
+    print "COUNT (integer) is the number of repetitions of the pattern"
+    print "BYTE0 is the first step of the pattern, BYTE1 (optional) is the second, etc."
+    sys.exit()
+
+# Initialize and open connection to GoodFET
+client = GoodFET()
+client.verbose = False # Dump activity to terminal?
+client.serInit(timeout=60) # UART comm timeout (in seconds)
+
+# Handle each possible STROBE verb in turn
+if sys.argv[1] == "allhi":
+    data = client.writecmd(STROBEAPP, STROBE_ALLHI, 0, [])
+
+elif sys.argv[1] == "alllo":
+    data = client.writecmd(STROBEAPP, STROBE_ALLLO, 0, [])
+
+elif sys.argv[1] == "pattern":
+    if len(sys.argv) < 5:
+        print "ERROR: Incorrect usage of \"pattern\" verb"
+        sys.exit(-1)
+    data = client.writecmd(STROBEAPP, STROBE_PATTERN, len(sys.argv)-2,
+                           [int(sys.argv[2]), int(sys.argv[3])]+[int(arg, base=16) for arg in sys.argv[4:]])
+
+else:
+    print "Unrecognized verb: %s" % sys.argv[1]
+    sys.exit(-1)
